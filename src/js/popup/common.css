@@ -1,0 +1,26 @@
+body {
+  /*background: #fafaff*/
+}
+
+* {
+  font-size: 14px
+}
+
+*::-webkit-scrollbar-track {
+  /*border-radius: 10px;*/
+  background-color: #ddd
+}
+
+*::-webkit-scrollbar {
+  width: 7px;
+  background-color: #ddd;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: #aaa;
+}
+
+.popup-body {
+  position: relative;
+  flex: 1 1 auto;
+}

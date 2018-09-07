@@ -7,6 +7,9 @@ var webpack = require("webpack"),
     HtmlWebpackPlugin = require("html-webpack-plugin"),
     WriteFilePlugin = require("write-file-webpack-plugin");
 
+function resolve (dir) {
+  return path.join(__dirname, dir)
+}
 // load the secrets
 var alias = {};
 
@@ -20,9 +23,10 @@ if (fileSystem.existsSync(secretsPath)) {
 
 var options = {
   entry: {
-    popup: path.join(__dirname, "src", "js", "popup.js"),
+    popup: path.join(__dirname, "src", "js", "popup", "main.js"),
     options: path.join(__dirname, "src", "js", "options.js"),
-    background: path.join(__dirname, "src", "js", "background.js")
+    background: path.join(__dirname, "src", "js", "background", "index.js"),
+    contentScript: path.join(__dirname, "src", "js", "contentScript.js")
   },
   output: {
     path: path.join(__dirname, "build"),
@@ -44,11 +48,42 @@ var options = {
         test: /\.html$/,
         loader: "html-loader",
         exclude: /node_modules/
+      },
+      {
+        test: /\.(png|jpe?g|gif|svg)(\?.*)?$/,
+        loader: 'url-loader'
+      },
+      {
+        test: /\.vue$/,
+        loader: 'vue-loader',
+        exclude: /node_modules/,
+        options: {
+          loaders: {
+            'scss': 'vue-style-loader!css-loader!sass-loader',
+            'sass': 'vue-style-loader!css-loader!sass-loader?indentedSyntax',
+            'css':'vue-style-loader!css-loader',
+            'style':'vue-style-loader',
+            'less':'vue-style-loader!css-loader!less-loader'
+          }
+        }
       }
     ]
   },
   resolve: {
-    alias: alias
+    extensions: ['.js', '.vue', '.json'],
+    alias: Object.assign(
+      alias,
+      {
+        'vue': 'vue/dist/vue.js',
+        'Components': resolve('src/js/popup/components'),
+        'Middlewares': resolve('src/js/popup/middlewares'),
+        'Utils': resolve('utils/functions'),
+        'Styles': resolve('src/css'),
+        'Popup': resolve('src/js/popup'),
+        'IndexedDB': resolve('src/js/IndexedDB'),
+        'BackgroundProtocol': resolve('src/js/popupBackgroundCommunicationProtocol')
+      }
+    )
   },
   plugins: [
     // clean the build folder
@@ -61,11 +96,16 @@ var options = {
       from: "src/manifest.json",
       transform: function (content, path) {
         // generates the manifest file using the package.json informations
-        return Buffer.from(JSON.stringify({
-          description: process.env.npm_package_description,
-          version: process.env.npm_package_version,
-          ...JSON.parse(content.toString())
-        }))
+        return Buffer.from(
+          JSON.stringify(
+            Object.assign(
+              JSON.parse(content.toString()),
+              {
+                description: process.env.npm_package_description,
+                version: process.env.npm_package_version,
+              })
+          )
+        )
       }
     }]),
     new HtmlWebpackPlugin({

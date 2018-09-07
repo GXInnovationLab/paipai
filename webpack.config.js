@@ -6,6 +6,8 @@ var webpack = require("webpack"),
     CopyWebpackPlugin = require("copy-webpack-plugin"),
     HtmlWebpackPlugin = require("html-webpack-plugin"),
     WriteFilePlugin = require("write-file-webpack-plugin");
+const VueLoaderPlugin = require('vue-loader/lib/plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 function resolve (dir) {
   return path.join(__dirname, dir)
@@ -36,36 +38,33 @@ var options = {
     rules: [
       {
         test: /\.css$/,
-        loader: "style-loader!css-loader",
-        exclude: /node_modules/
+        use: [
+        process.env.NODE_ENV !== 'production'
+            ? 'vue-style-loader'
+            : MiniCssExtractPlugin.loader,
+          'css-loader'
+
+        ]
       },
       {
         test: new RegExp('\.(' + fileExtensions.join('|') + ')$'),
-        loader: "file-loader?name=[name].[ext]",
-        exclude: /node_modules/
+        use: "file-loader?name=[name].[ext]"
       },
       {
         test: /\.html$/,
-        loader: "html-loader",
-        exclude: /node_modules/
+        use: "html-loader",
       },
       {
         test: /\.(png|jpe?g|gif|svg)(\?.*)?$/,
-        loader: 'url-loader'
+        use: 'url-loader'
+      },
+      {
+        test: /\.js$/,
+        use: 'babel-loader'
       },
       {
         test: /\.vue$/,
-        loader: 'vue-loader',
-        exclude: /node_modules/,
-        options: {
-          loaders: {
-            'scss': 'vue-style-loader!css-loader!sass-loader',
-            'sass': 'vue-style-loader!css-loader!sass-loader?indentedSyntax',
-            'css':'vue-style-loader!css-loader',
-            'style':'vue-style-loader',
-            'less':'vue-style-loader!css-loader!less-loader'
-          }
-        }
+        use: 'vue-loader'
       }
     ]
   },
@@ -123,7 +122,8 @@ var options = {
       filename: "background.html",
       chunks: ["background"]
     }),
-    new WriteFilePlugin()
+    new WriteFilePlugin(),
+    new VueLoaderPlugin()
   ]
 };
 

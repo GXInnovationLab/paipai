@@ -3,7 +3,9 @@ import '../../img/icon-34.png'
 
 import workingSkills from './workingSkills';
 import statusResolutions from './statusResolutions';
-import database from 'IndexedDB/controller';
+import db from 'IndexedDB/controller';
+import fileSystem from './fileSystem';
+window.fileSystem = fileSystem;
 // import db from './indexedDB/index';
 
 /**
@@ -17,7 +19,12 @@ import database from 'IndexedDB/controller';
  *
  */
 
-database.connect();
+db.connect();
+
+/**
+ * 初始化文件系统
+ */
+fileSystem.load();
 
 /**
  * 下面是background会从事的持续性工作的识别码
@@ -96,21 +103,54 @@ window.api = {
   }
 }
 
-// chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-//   chrome.tabs.sendMessage(tabs[0].id, )
-// })
+/**
+ * [contentScriptMsgReceiver description]
+ * @type {Object}
+ */
 const contentScriptMsgReceiver = {
-  CLICK_EVENT: req => {
-    const data = {
-      x: req.x,
-      y: req.y,
-      url: req.url,
-      time: (new Date).getTime(),
-      story_id: backgroundStatus.ctx.storyId
+  /**
+   * [description]
+   * @param  {[type]} req [description]
+   * @return {[type]}     [description]
+   */
+  TAKE_SCREEN_SHOT: async req => {
+    // use chrome.tabs apis to take the screenshot
+    const base64Data = await Promise.resolve({
+      then: resolve => chrome.tabs.captureVisibleTab(
+        null, {format: 'png', quality: 100}, function(dataURI) {
+          resolve(dataURI)
+        }
+      )
+    });
+    // create byteArray
+    window.b = base64Data;
+    const byteCharacters = atob(base64Data.split(',')[1]);
+    const byteNumbers = new Array(byteCharacters.length)
+    for (var i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
     }
-    console.log('req.url: ', req.url);
+    const byteArray = new Uint8Array(byteNumbers);
+    // create fileName
+    const fileName = `${(new Date).getTime().toString().slice(-9)}.png`;
 
-    database.insert('click_events', data);
+    fileSystem.createFileInDirectory(fileName, byteArray, 'image/png', backgroundStatus.ctx.name);
+    // create new image record
+    const imageData = {
+      name: fileName,
+      story_id: backgroundStatus.ctx.storyId,
+      time: (new Date()).getTime(),
+      url: req.url
+    };
+    console.log(imageData);
+    const newImageId = await db.insert('images', imageData);
+    // create new story record
+    const story = await db.get('stories', { id: backgroundStatus.ctx.storyId });
+    story.order.push(newImageId);
+    db.update('stories', story);
+  },
+
+  GET_DEMO_DATA: async (req, sendResponse) => {
+    sendResponse(backgroundStatus.demoData);
   }
 }
 
@@ -123,13 +163,8 @@ chrome.runtime.onMessage.addListener(
           contentScriptMsgReceiver,
           backgroundStatus.component.msgReceiver
         );
-      console.log(receiverTotal);
 
-      receiverTotal[msg.command](msg.data);
+      receiverTotal[msg.command](msg.data, sendResponse);
     }
   }
 )
-
-window.st = function() {
-  console.log(backgroundStatus)
-}

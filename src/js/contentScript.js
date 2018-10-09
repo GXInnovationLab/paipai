@@ -1,78 +1,70 @@
+import html2canvas from 'html2canvas';
+
+/**
+ * [description]
+ * @param  {[type]} msg [description]
+ * @return {[type]}     [description]
+ */
+const sendMsg = msg => {
+  return new Promise( resolve => {
+    chrome.runtime.sendMessage(msg, function(response) {
+      resolve(response);
+    })
+  })
+}
+
 document.addEventListener('keydown', event => {
   console.log(event.code);
   const codeToCommand = {
     'ArrowRight': 'SKIP_FORWARD_IN_DEMO',
     'ArrowUp': 'PAGE_UP_IN_DEMO',
-    'ArrowDown': 'PAGE_DOWN_IN_DEMO'
+    'ArrowDown': 'PAGE_DOWN_IN_DEMO',
+    'Backslash': 'TAKE_SCREEN_SHOT',
   };
 
-  sendMsg({
-    command: codeToCommand[event.code]
-  })
+  const command = codeToCommand[event.code];
+
+  // sendMsg({ command });
+  if (typeof contentScriptOperations[command] === 'function') {
+    contentScriptOperations[command]();
+  }
 });
 
-const operations = {
-  ON_RECORD: () => {
-    document.addEventListener('click', trackClickEvent);
-  },
+const util = {};
+util.toArray = function(list) {
+    return Array.prototype.slice.call(list || [], 0);
+};
 
-  STOP_RECORD: () => {
-    document.removeEventListener('click', trackClickEvent);
-  },
+/**
+ * content script operations
+ */
+const contentScriptOperations = {
+  TAKE_SCREEN_SHOT: async() => {
 
-  FRAME_UPDATED: (msg, sendResponse) => {
-    updateFrame(msg, sendResponse, true);
-  },
-
-  FRAME_UPDATED_WITHOUT_TRIGGER_THE_EVENTS_BEFORE: msg => {
-    updateFrame(msg, sendResponse, false);
-  },
-
-  DEMO_ONCLICK: msg => {
-    const { data } = msg;
-    clearEventsTrack();
-
-    const { x, y } = data;
-    clickPoint(x, y);
-  },
-
-  GO_TO: msg => {
-    const { data } = msg;
-
-    location.href = data;
-  },
-
-  GO_TO_OR_REFRESH: msg => {
-    const { data } = msg;
-
-    if (location.href === data) {
-      location.reload();
-    } else {
-      const dataProtocolCheck = data.slice(0, 4);
-      const presentProtocolCheck = location.href.slice(0, 4);
-      if (
-        dataProtocolCheck === 'file' &&
-        dataProtocolCheck !== presentProtocolCheck
-      ) {
-        swal({
-          type: 'warning',
-          title: '',
-          html: `
-            The page url belongs to a local file. The program is not able to take you there, please copy the following url and redirect the web page manually:
-            <br />
-            <br />
-            <span style="color: #1717b1">${data}</span>
-          `
-        });
-      } else {
-        location.href = data;
+    // const canvas = await html2canvas(document.body);
+    // const base64Data = canvas.toDataURL("image/png");
+    sendMsg({
+      command: 'TAKE_SCREEN_SHOT',
+      data: {
+        url: window.location.href
       }
-    }
-  },
-
-  GET_CURRENT_PAGE: (msg, sendResponse) => {
-    sendResponse(location.href);
+    });
   }
+  // }
+}
+
+/**
+ * [operations description]
+ * @type {Object}
+ */
+const operations = {
+  // ON_RECORD: () => {
+  //   document.addEventListener('click', trackClickEvent);
+  // },
+
+  // STOP_RECORD: () => {
+  //   document.removeEventListener('click', trackClickEvent);
+  // }
 }
 
 chrome.runtime.onMessage.addListener(
@@ -81,3 +73,16 @@ chrome.runtime.onMessage.addListener(
     operations[msg.command](msg, sendResponse);
   }
 )
+
+if (window.location.pathname === '/paipai_demo.html') {
+  (async () => {
+    const res = await sendMsg({
+      command: 'GET_DEMO_DATA',
+      data: {
+        url: window.location.href
+      }
+    });
+    console.log('res: ', res);
+  })()
+}
+console.log(123)

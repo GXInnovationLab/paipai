@@ -17,8 +17,7 @@ export default {
     // }
 
     const route = await api.command(backgroundProtocol.GET_STATUS_URL);
-    console.log('route: ', route)
-    router.push(route);
+    route && router.push(route);
   }
 }
 
@@ -27,7 +26,5 @@ export default {
 <style>
 #app {
   font-family: 'Avenir', Helvetica, Arial, sans-serif;
-  width: 315px;
-  height: 400px;
 }
 </style>

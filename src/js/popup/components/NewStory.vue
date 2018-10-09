@@ -1,5 +1,5 @@
 <template>
-  <div class="new-story">
+  <div class="new-story normal-size">
     <popup-header
       back-route='/'
       back-page-name='Home'
@@ -159,7 +159,8 @@ export default {
 
   .story-name {
     position: absolute;
-    bottom: 55px;
+    /*bottom: 55px;*/
+    bottom: 280px;
     width: 100%;
   }
 

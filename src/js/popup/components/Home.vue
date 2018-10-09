@@ -1,5 +1,5 @@
 <template>
-  <div class='home'>
+  <div class='home normal-size'>
     <popup-header
       page-title='Home'
     >
@@ -110,7 +110,6 @@ export default {
   }
 
   .home {
-    height: 100%;
     display: flex;
     flex-direction: column;
   }

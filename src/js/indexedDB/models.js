@@ -1,27 +1,21 @@
 /**
- * 创建schema，这个schema对应的数据将用来记录用户的网页点击操作
- * @type {Schema}
- */
-const clickEventSchema = [
-  ['url', 'url', {unique: false}],
-  ['time', 'time', {unique: false}],
-  ['x', 'x', {unique: false}],
-  ['y', 'y', {unique: false}],
-  ['story_id', 'story_id', {unique: false}]
-]
-
-/**
- * 创建schema，这个schema对应的数据将用来记录用户
- * 访问一个静态html文件的url的行为
+ * 创建schema，对应着fileSystem中的一个directory
  * @type {Schema}
  */
 const storyShema = [
   ['name', 'name', {unique: false}],
   ['time', 'time', {unique: false}],
-  ['url', 'url', {unique: false}]
+  ['order', 'order', {unique: false}]
+]
+
+const imageSchema = [
+  ['name', 'name', {unique: false}],
+  ['story_id', 'story_id', {unique: false}],
+  ['url', 'url', {unique: false}],
+  ['time', 'time', {unique: false}]
 ]
 
 export default {
-  clickEventSchema,
+  imageSchema,
   storyShema
 }

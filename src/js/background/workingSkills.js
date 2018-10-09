@@ -3,6 +3,7 @@ import db, { stores } from 'IndexedDB/controller';
 import { getCurrentWindowActiveTabId } from 'Utils';
 // import c from './components/index.js';
 import displayGenerator from './displayGenerator';
+import fileSystem from './fileSystem';
 
 // function getCurrentWindowActiveTabId() {
 //   return new Promise((resolve) => {
@@ -29,7 +30,8 @@ const addNewStory = async function(req) {
   const data = {
     name: req.name,
     time: (new Date).getTime(),
-    url: url
+    url: url,
+    order: []
   }
   return await db.insert('stories', data);
 }
@@ -38,18 +40,31 @@ const getStoryList = async function() {
   return await db.getAll('stories');
 }
 
-const getStoryAndItsEvents = async function(condition) {
-  const clickEvents = await db.get('click_events', condition);
+/**
+ * [description]
+ * @param  {Object} condition {story_id}
+ * @return {Object}           [description]
+ */
+const getStoryAndItsImages = async function(condition) {
+  const images = await db.get('images', condition);
   const story = await db.get('stories', {
     id: condition.story_id
   });
-  return { story, clickEvents };
+  return { story, images };
 }
 
 const deleteStory = async function(condition) {
   const res = await db.delete('stories', {
     id: condition.story_id
   });
+  fileSystem.removeDirectory(res.name);
+
+  return res;
+}
+
+const updateStory = async function(data) {
+  const res = await db.update('stories', data);
+
   return res;
 }
 
@@ -94,9 +109,13 @@ export default {
       }
     );
 
+    // Insert new story into indexedDB
     const newStoryId = await addNewStory({
       name: popupCtx.name
     });
+
+    // Create a directory in the file system
+    await fileSystem.createDirectory(popupCtx.name);
 
     popupCtx.storyId = newStoryId;
     status.ctx = popupCtx;
@@ -141,8 +160,7 @@ export default {
   },
 
   GET_STORY_LIST: async (status) => {
-    const result = await getStoryList({
-    });
+    const result = await getStoryList({});
     return result;
   },
 
@@ -151,8 +169,18 @@ export default {
     return result;
   },
 
+  GET_STORY_AND_ITS_IMAGES: async (status, story_id) => {
+    return await getStoryAndItsImages({ story_id });
+  },
+
   DELETE_STORY: async (status, story_id) => {
     const result = await deleteStory({ story_id });
+    // fileSystem.removeDirectory(result.name);
+    return result;
+  },
+
+  UPDATE_STORY: async (status, data) => {
+    const result = await updateStory(data);
     return result;
   },
 
@@ -161,6 +189,24 @@ export default {
     status.data = {};
     status.component = undefined;
     status.route = undefined;
+  },
+
+  GO_DEMO: async (status, data) => {
+    const BLANK_HTML_NAME = 'paipai_demo.html';
+    await fileSystem.createFile(BLANK_HTML_NAME);
+    const url = `filesystem:${window.location.origin}/persistent/${BLANK_HTML_NAME}`;
+    chrome.tabs.create({ url: url });
+    status.demoData = data;
+    // const tabId = await getCurrentWindowActiveTabId();
+    // status.tabId = tabId;
+    // status.route = paths.newStory;
+
+    // chrome.tabs.sendMessage(
+    //   tabId,
+    //   {
+    //     command: 'ON_RECORD'
+    //   }
+    // );
   },
 
   R_U_STILL_ALIVE: () => {

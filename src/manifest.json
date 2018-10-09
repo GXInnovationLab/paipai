@@ -21,7 +21,15 @@
     }
   ],
   "persistent": true,
+  "file_system_provider_capabilities": {
+    "configurable": true,
+    "watchable": false,
+    "multiple_mounts": true,
+    "source": "network"
+  },
   "permissions": [
-    "tabs"
+    "tabs",
+    "unlimitedStorage",
+    "activeTab"
   ]
 }

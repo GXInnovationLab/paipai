@@ -2,6 +2,11 @@ body {
   /*background: #fafaff*/
 }
 
+.normal-size {
+  width: 315px;
+  height: 400px;
+}
+
 * {
   font-size: 14px
 }

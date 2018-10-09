@@ -8,9 +8,9 @@ export const stores = [
     schema: models.storyShema
   },
   {
-    name: 'click_events',
+    name: 'images',
     keypath: 'id',
-    schema: models.clickEventSchema
+    schema: models.imageSchema
   }
 ];
 

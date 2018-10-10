@@ -1,3 +1,4 @@
+// process.env.NODE_ENV = 'production';
 var webpack = require("webpack"),
     config = require("../webpack.config");
 

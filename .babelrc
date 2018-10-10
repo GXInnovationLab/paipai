@@ -1,6 +1,6 @@
 {
   "presets": [
-    ["@babel/env", {
+    ["@babel/preset-env", {
       "targets": {
         "edge": "17",
         "firefox": "60",
@@ -9,5 +9,6 @@
       },
       useBuiltIns: "usage"
     }]
-  ]
+  ],
+  "plugins": ["transform-vue-jsx", "@babel/plugin-transform-runtime"]
 }

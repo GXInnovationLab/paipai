@@ -4,14 +4,19 @@
   "description": "A chrome extension for the convenience of the design team's user testing tasks.",
   "scripts": {
     "build": "node utils/build.js",
+    "build1": "NODE_ENV=production ./node_modules/.bin/webpack --config webpack.config.js",
     "start": "node utils/webserver.js"
   },
   "devDependencies": {
     "@babel/cli": "^7.0.0",
     "@babel/core": "^7.0.0",
+    "@babel/plugin-transform-runtime": "^7.1.0",
     "@babel/preset-env": "^7.0.0",
+    "@babel/runtime": "^7.1.2",
     "autoprefixer": "^8.6.4",
     "babel-loader": "^8.0.2",
+    "babel-plugin-syntax-jsx": "^6.18.0",
+    "babel-plugin-transform-vue-jsx": "^3.7.0",
     "clean-webpack-plugin": "^0.1.17",
     "copy-webpack-plugin": "^4.5.2",
     "css-loader": "^0.25.0",
@@ -21,10 +26,12 @@
     "html-webpack-plugin": "^3.2.0",
     "mini-css-extract-plugin": "^0.4.2",
     "style-loader": "^0.13.0",
+    "uglifyjs-webpack-plugin": "^2.0.1",
     "url-loader": "^1.0.1",
     "vue-loader": "^15.4.1",
     "vue-template-compiler": "^2.5.17",
     "webpack": "^4.17.2",
+    "webpack-cli": "^3.1.2",
     "webpack-dev-server": "^2.3.0",
     "write-file-webpack-plugin": "3.4.2"
   },

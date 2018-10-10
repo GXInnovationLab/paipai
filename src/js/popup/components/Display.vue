@@ -24,11 +24,11 @@
             v-on:click='exportPDF()'
             v-if='!editModeEnabled'
           >Export</a>
-          <a
+          <!-- <a
             href="javascript: void(0)"
             v-on:click='goDemo()'
             v-if='!editModeEnabled'
-          >Demo</a>
+          >Demo</a> -->
           <a
             href="javascript: void(0)"
             v-on:click='editingZoomIn()'
@@ -239,9 +239,9 @@ export default {
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       const imgMaxWidth = pageWidth;
-      const TITLE_HEIGHT = 20;
+      const TITLE_HEIGHT = 6;
       const HYPERLINK_HEIGHT = 15;
-      // 30 is for title, 15 is for hyperlink
+      const IMAGE_MARGIN_BOTTOM = 7;
       const imgMaxHeight = pageHeight - TITLE_HEIGHT - HYPERLINK_HEIGHT;
       const limitRatio = imgMaxWidth / imgMaxHeight;
       const addImageToPDF = async (imgId, top) => {
@@ -262,20 +262,22 @@ export default {
 
         pdf.setFontSize(10);
         pdf.setTextColor(46, 99, 217);
-        pdf.textWithLink(`Page url: ${this.images[imgId].pageUrl}`, 10, top + TITLE_HEIGHT / 3, { url: this.images[imgId].pageUrl });
-        pdf.addImage(dataUrl, 'PNG', imgLeft, top + HYPERLINK_HEIGHT, imgWidth, imgHeight, null, null);
+        pdf.textWithLink(`Page url: ${this.images[imgId].pageUrl}`, 20, top + imgHeight + IMAGE_MARGIN_BOTTOM, { url: this.images[imgId].pageUrl });
+        pdf.addImage(dataUrl, 'PNG', imgLeft, top, imgWidth, imgHeight, null, null);
       }
 
-      pdf.setFont('Avenir');
-      pdf.setFontSize(14);
-      pdf.text( 5, 10, `Story: ${this.story.name}`);
+      // pdf.setFont('Avenir');
+      // pdf.setFontSize(14);
+      // pdf.text( 5, 10, `Story: ${this.story.name}`);
 
       // Add page and image
       for (let i = 0; i < this.order.length; i ++) {
         i > 0 && pdf.addPage();
+        // print pageNumber
         pdf.setFontSize(10);
         pdf.setTextColor(120, 120, 120);
-        pdf.text( pageWidth - 20, 12, `Page ${i + 1}`);
+        const pageNumberTop = pageHeight - HYPERLINK_HEIGHT + IMAGE_MARGIN_BOTTOM;
+        pdf.text( pageWidth - 20, pageNumberTop, `Page ${i + 1}`);
 
         await addImageToPDF(this.order[i], TITLE_HEIGHT);
       }
@@ -362,7 +364,7 @@ export default {
 </style>
 <style>
 .et_image-list {
-  overflow: auto;
+  overflow-y: auto;
 }
 
 .et_image-list-editor-hint {

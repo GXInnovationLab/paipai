@@ -85,4 +85,3 @@ if (window.location.pathname === '/paipai_demo.html') {
     console.log('res: ', res);
   })()
 }
-console.log(123)

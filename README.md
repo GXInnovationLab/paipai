@@ -1,6 +1,6 @@
 # Pdfmaker for Demo
-Using IndexedDB to store the file infos and fileSystem to store the files.
-The popup page was developed in Simple Vue.js.
+Using IndexedDB to store the file infos and fileSystem to store the files.<br />
+The popup page was developed in Simple Vue.js.<br />
 
-......Still under development.......
-There's still some space for optimization of IndexedDB management.
+......Still under development.......<br />
+There's still some space for optimization of IndexedDB management.<br />

@@ -1,25 +1,64 @@
 <template>
-  <div class="new-story normal-size">
-    <popup-header
-      back-route='/'
-      back-page-name='Home'
-      page-title='New Story'
-    ></popup-header>
-    <center class='counter-container'>
-        <time>{{ counterFormat(counter) }}</time>
-    </center>
-    <center class='trigger-button'>
-      <a href="javascript: void(0)" v-on:click='onRecord'>
-        <v-icon name='record' v-if='isRecording === false' />
-        <v-icon name='stop' v-else style="font-size: 33px" />
-      </a>
-    </center>
-    <center class='story-name'>
-      <input v-model='name' placeholder="Story Name" v-if='isRecording === false'/>
-      <span v-if='isRecording === true'>Story {{name}} is being recorded</span>
-    </center>
+  <md-app class='home normal-size' md-waterfall md-mode="fixed">
+    <md-app-toolbar class='md-primary md-elevation-4 md-toolbar--header'>
+      <div class="story-name">
+        <input
+          type="text"
+          name="name"
+          class="story-name__input"
+          v-model="storyName"
+          ref="storyNameInput"
+        >
+      </div>
+      <div>
+        <md-button class='md-icon-button md-primary md-icon-button--common' v-on:click='addNewStory'>
+          <i class="iconfont icon-add"></i>
+        </md-button>
+        <router-link
+          class='create-new-story'
+          :to='{ path: `/display/${this.$route.params.id}` }'
+          title='Create New Story'
+        >
+          <md-button class='md-icon-button md-primary md-icon-button--common'>
+            <i class="iconfont icon-edit"></i>
+          </md-button>
+        </router-link>
+        <router-link
+          class='create-new-story'
+          to='/home'
+          title='Create New Story'
+        >
+          <md-button class='md-icon-button md-primary md-icon-button--common'>
+            <i class="iconfont icon-filelist"></i>
+          </md-button>
+        </router-link>
+      </div>
+    </md-app-toolbar>
+    <md-app-content class='home-content'>
+      <!-- <center class='counter-container'>
+          <time>{{ counterFormat(counter) }}</time>
+      </center> -->
 
-  </div>
+      <section class='et_image-list'>
+        <div
+          class='et_image-list-item'
+          v-for='(item, index) in $store.state.storyDetails.order'
+          v-bind:item='item'
+        >
+          <img v-bind:src="getImgSrc(item)" :ref='`image-${item}`'/>
+          <p>
+            {{`${index + 1} in ${$store.state.storyDetails.order.length}`}}
+          </p>
+        </div>
+      </section>
+      <center class='trigger-button'>
+        <md-button class='md-fab' v-on:click='onRecord'>
+          <i class="iconfont icon-camera" v-if='!$store.state.storyDetails.isRecording'></i>
+          <i class="iconfont icon-pause" v-else></i>
+        </md-button>
+      </center>
+    </md-app-content>
+  </md-app>
 </template>
 
 <script>
@@ -34,14 +73,46 @@ export default {
   data() {
     return this.initializeData();
   },
-  methods: {
 
+  computed: {
+    storyDetails() {
+      return this.$store.state.storyDetails
+    },
+
+    getImgSrc() {
+      const { images } = this.$store.state.storyDetails;
+      return item => {
+        return `filesystem:${window.location.origin}/persistent/${this.$route.params.id}/${images[item].fileName}`;
+      }
+    },
+
+    getStoryId() {
+      return this.$route.params.id;
+    },
+
+    storyName: {
+      get () {
+        return this.$store.state.storyDetails.story.name
+      },
+
+      set (value) {
+        this.$store.commit('storyDetails/changeStoryName', { value });
+        api.command(BackgroundProtocol.CHANGE_STORY_NAME);
+      }
+    }
+  },
+
+  watch: {
+    getStoryId() {
+      this.get();
+    }
+  },
+
+  methods: {
     initializeData() {
       return {
         name: '',
         counter: 0,
-        startTimestamp: 0,
-        isRecording: false,
         countingInverval: undefined,
         /**
          * 这个变量在popup中没有用途，是为了方便background存储数据
@@ -51,42 +122,44 @@ export default {
       }
     },
 
+    stopRecord() {
+      /**
+       * 停止录制
+       */
+      this.$store.commit('storyDetails/stopRecording');
+      api.command(BackgroundProtocol.STOP_RECORD);
+    },
+
     onRecord() {
-      if (this.isRecording === true) {
-        /**
-         * 停止录制
-         */
-        this.isRecording = false;
-        clearInterval(this.countingInverval);
-
-        const initData = this.initializeData();
-        Object.keys(initData).forEach( key => {
-          this[key] = initData[key];
-        });
-        this.counter = 0;
-
-        api.command(BackgroundProtocol.STOP_RECORD);
+      if (this.$store.state.storyDetails.isRecording) {
+        this.stopRecord();
       } else {
         /**
          * 开始录制
          */
-        this.isRecording = true;
-        this.startTimestamp = (new Date).getTime();
+        this.$store.commit('storyDetails/startRecording');
+
 
         api.command(BackgroundProtocol.ON_RECORD, this);
-        this.startCounting();
+        // chrome.runtime.onMessage.addListener(function(msg, sender, sendResponse) {
+        //   console.log(msg.command);
+        // });
       }
     },
 
-    startCounting() {
-      this.countingInverval = window.setInterval(() => {
-        const distance = this.getTimeDistance();
-        this.counter = distance;
-      }, 500)
+    addNewStory: async function() {
+      this.remove();
+      const newStoryId = await api.command(BackgroundProtocol.ADD_NEW_STORY);
+      this.$router.push(`/new/${newStoryId}`);
     },
 
-    getTimeDistance() {
-        return (new Date).getTime() - this.startTimestamp;
+    remove() {
+      this.$store.commit('storyDetails/remove');
+    },
+
+    get() {
+      // console.log('this.storyDetails', this.storyDetails)
+      this.$store.dispatch('storyDetails/getAll', {storyId: this.$route.params.id});
     },
 
     counterFormat(distance) {
@@ -94,20 +167,28 @@ export default {
     }
 
   },
-  mounted: async function() {
+
+  async mounted() {
+    this.$refs.storyNameInput.focus();
+    this.get();
     /**
      * 后台会自动将this的各种属性替换掉
      */
-    const backgroundStatus = await api.command('SYNC_RECORDING_STATUS', this);
+    // const backgroundStatus = await api.command('SYNC_RECORDING_STATUS', this);
 
     /**
      * 非录制状态下backgroundStatus的返回值为false
      */
-    if ( backgroundStatus && this.isRecording ) {
-      this.counter = this.getTimeDistance();
-      this.startCounting();
-    }
+    // if ( backgroundStatus && this.isRecording ) {
+    //   this.counter = this.getTimeDistance();
+    // }
   },
+
+  destroyed() {
+    this.remove();
+    this.stopRecord();
+  },
+
   components: {
     'popup-header': Head
   }
@@ -128,9 +209,9 @@ export default {
 
   .trigger-button {
     position: absolute;
-    top: 46%;
+    bottom: 20px;
     left: 50%;
-    transform: translate(-50%, -50%);
+    transform: translateX(-50%);
   }
 
   .trigger-button a {
@@ -154,29 +235,22 @@ export default {
 
   .trigger-button i {
     color: #fff;
-    font-size: 30px;
+    font-size: 27px;
   }
 
   .story-name {
-    position: absolute;
-    /*bottom: 55px;*/
-    bottom: 280px;
+    flex: 1 1 auto;
+    height: 40px;
+  }
+
+  .story-name__input {
     width: 100%;
-  }
-
-  .story-name * {
-    font-size: 17px;
-  }
-
-  .story-name span {
-    color: #777
-  }
-
-  .story-name input {
+    height: 100%;
+    font-size: 18px;
+    background: #00000000;
+    color: #fff;
     border: none;
-    padding: 5px 10px;
-    border-bottom: 2px solid #aaa;
-    text-align: center
+    padding-left: 10px;
   }
 
 </style>

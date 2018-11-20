@@ -4,6 +4,7 @@ import { getCurrentWindowActiveTabId } from 'Utils';
 // import c from './components/index.js';
 import displayGenerator from './displayGenerator';
 import fileSystem from './fileSystem';
+window.f = fileSystem;
 
 // function getCurrentWindowActiveTabId() {
 //   return new Promise((resolve) => {
@@ -57,8 +58,9 @@ const deleteStory = async function(condition) {
   const res = await db.delete('stories', {
     id: condition.story_id
   });
-  fileSystem.removeDirectory(res.name);
 
+  fileSystem.removeDirectory((condition.story_id).toString());
+  console.log('deleted');
   return res;
 }
 
@@ -95,30 +97,46 @@ const syncVueStatus = async (status, newCtx, type) => {
  * 这个参数对应的值是background中的backgroundStatus
  */
 export default {
-  ON_RECORD: async (status, popupCtx) => {
+  ADD_NEW_STORY: async (status) => {
     status.backgroundIsDoing = status.backgroundWorkingStatusList.RECORDING;
 
     const tabId = await getCurrentWindowActiveTabId();
     status.tabId = tabId;
-    status.route = paths.newStory;
 
+    // chrome.tabs.sendMessage(
+    //   tabId,
+    //   {
+    //     command: 'ON_RECORD'
+    //   }
+    // );
+
+    // Insert new story into indexedDB
+    const storyList = await getStoryList({});
+    const newStoryId = await addNewStory({
+      name: `New File (${storyList.length + 1})`
+      // name: popupCtx.name
+    });
+
+    // Create a directory in the file system
+    await fileSystem.createDirectory(newStoryId);
+    return newStoryId;
+    // popupCtx.storyId = newStoryId;
+    // status.route = paths.newStory;
+    // status.ctx = popupCtx;
+  },
+
+  CHANGE_STORY_NAME: async (status) => {
+    const result = await updateStory(status.vuexStore.state.storyDetails.story);
+  },
+
+  ON_RECORD: async (status, data) => {
+    const tabId = await getCurrentWindowActiveTabId();
     chrome.tabs.sendMessage(
       tabId,
       {
         command: 'ON_RECORD'
       }
     );
-
-    // Insert new story into indexedDB
-    const newStoryId = await addNewStory({
-      name: popupCtx.name
-    });
-
-    // Create a directory in the file system
-    await fileSystem.createDirectory(popupCtx.name);
-
-    popupCtx.storyId = newStoryId;
-    status.ctx = popupCtx;
   },
 
   ON_DISPLAY: async (status, data) => {
@@ -136,7 +154,7 @@ export default {
     status.backgroundIsDoing = status.backgroundWorkingStatusList.NOTHING;
     status.route = undefined;
 
-    const tabId = status.tabId;
+    const tabId = await getCurrentWindowActiveTabId();
     chrome.tabs.sendMessage(
       tabId,
       {
@@ -175,7 +193,6 @@ export default {
 
   DELETE_STORY: async (status, story_id) => {
     const result = await deleteStory({ story_id });
-    // fileSystem.removeDirectory(result.name);
     return result;
   },
 
@@ -194,7 +211,7 @@ export default {
   GO_DEMO: async (status, data) => {
     const BLANK_HTML_NAME = 'paipai_demo.html';
     await fileSystem.createFile(BLANK_HTML_NAME);
-    const url = `filesystem:${window.location.origin}/persistent/${BLANK_HTML_NAME}`;
+    // const url = `filesystem:${window.location.origin}/persistent/${BLANK_HTML_NAME}`;
     chrome.tabs.create({ url: url });
     status.demoData = data;
     // const tabId = await getCurrentWindowActiveTabId();
@@ -209,11 +226,26 @@ export default {
     // );
   },
 
+  POPUP_MOUNTED: (status, data) => {
+    status.vuexStore = data.store;
+    console.log(data.store)
+  },
+
+  POPUP_HASH_CHANGED: (status, data) => {
+    status.popupHash = data.hash;
+  },
+
   R_U_STILL_ALIVE: () => {
-    console.log(789)
   },
 
   GET_CHROME: async () => {
     return chrome;
+  },
+
+  GET_PREVIOUS_STATE: async status => {
+    return typeof status.vuexStore !== 'undefined' ? {
+      store: status.vuexStore,
+      url: status.popupHash
+    } : undefined;
   }
 }

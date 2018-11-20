@@ -6,9 +6,9 @@ var webpack = require("webpack"),
     CopyWebpackPlugin = require("copy-webpack-plugin"),
     HtmlWebpackPlugin = require("html-webpack-plugin"),
     WriteFilePlugin = require("write-file-webpack-plugin");
+    UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 const VueLoaderPlugin = require('vue-loader/lib/plugin');
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
+// const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 function resolve (dir) {
   return path.join(__dirname, dir)
@@ -66,6 +66,14 @@ var options = {
       {
         test: /\.js$/,
         use: 'babel-loader'
+      },
+      {
+          test: /\.scss$/,
+          use: [
+              "style-loader", // creates style nodes from JS strings
+              "css-loader", // translates CSS into CommonJS
+              "sass-loader" // compiles Sass to CSS, using Node Sass by default
+          ]
       }
     ]
   },
@@ -124,11 +132,10 @@ var options = {
 };
 
 if (env.NODE_ENV === "development") {
-  // options.devtool = "cheap-module-eval-source-map";
+  options.devtool = "cheap-module-eval-source-map";
 }
 if (env.NODE_ENV === "production") {
-  // options.plugins.push(new UglifyJsPlugin());
+  options.plugins.push(new UglifyJsPlugin());
 }
-console.log(env.NODE_ENV)
 
 module.exports = options;

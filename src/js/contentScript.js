@@ -13,8 +13,11 @@ const sendMsg = msg => {
   })
 }
 
+const commandsActivated = {
+  TAKE_SCREEN_SHOT: false
+}
+
 document.addEventListener('keydown', event => {
-  console.log(event.code);
   const codeToCommand = {
     'ArrowRight': 'SKIP_FORWARD_IN_DEMO',
     'ArrowUp': 'PAGE_UP_IN_DEMO',
@@ -25,7 +28,11 @@ document.addEventListener('keydown', event => {
   const command = codeToCommand[event.code];
 
   // sendMsg({ command });
-  if (typeof contentScriptOperations[command] === 'function') {
+  console.log('commandsActivated[command]: ', commandsActivated[command])
+  if (
+    typeof contentScriptOperations[command] === 'function' &&
+    commandsActivated[command]
+  ) {
     contentScriptOperations[command]();
   }
 });
@@ -40,7 +47,6 @@ util.toArray = function(list) {
  */
 const contentScriptOperations = {
   TAKE_SCREEN_SHOT: async() => {
-
     // const canvas = await html2canvas(document.body);
     // const base64Data = canvas.toDataURL("image/png");
     sendMsg({
@@ -53,23 +59,24 @@ const contentScriptOperations = {
   // }
 }
 
+window.commandsActivated = commandsActivated;
+
 /**
  * [operations description]
  * @type {Object}
  */
 const operations = {
-  // ON_RECORD: () => {
-  //   document.addEventListener('click', trackClickEvent);
-  // },
+  ON_RECORD: () => {
+    commandsActivated.TAKE_SCREEN_SHOT = true;
+  },
 
-  // STOP_RECORD: () => {
-  //   document.removeEventListener('click', trackClickEvent);
-  // }
+  STOP_RECORD: () => {
+    commandsActivated.TAKE_SCREEN_SHOT = false;
+  }
 }
 
 chrome.runtime.onMessage.addListener(
   function(msg, sender, sendResponse) {
-    console.log(msg.command);
     operations[msg.command](msg, sendResponse);
   }
 )
@@ -82,6 +89,5 @@ if (window.location.pathname === '/paipai_demo.html') {
         url: window.location.href
       }
     });
-    console.log('res: ', res);
   })()
 }

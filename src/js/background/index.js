@@ -5,6 +5,7 @@ import workingSkills from './workingSkills';
 import statusResolutions from './statusResolutions';
 import db from 'IndexedDB/controller';
 import fileSystem from './fileSystem';
+
 window.fileSystem = fileSystem;
 // import db from './indexedDB/index';
 
@@ -64,19 +65,22 @@ const backgroundStatus = {
    */
   tabId: undefined,
   /**
-   * vue组件上下文，详细内容在popup/components/NewStory.vue中
+   * vuexStore
    * @type {Object}
    */
-  ctx: {},
+  vuexStore: undefined,
   /**
    * 挂载后台运行的组件，成分在./components中获取
    * @type {object}
    */
   component: undefined,
+  popupHash: '/',
 
   backgroundIsDoing: backgroundWorkingStatusList.NOTHING,
   backgroundWorkingStatusList
 }
+
+window.bs = backgroundStatus;
 
 const popupStatus = {
   RECORDING: () => {}
@@ -84,7 +88,7 @@ const popupStatus = {
 
 chrome.runtime.onMessageExternal.addListener(
   function(request, sender, sendResponse) {
-    console.log(request)
+    console.log(request);
   }
 )
 
@@ -114,16 +118,18 @@ const contentScriptMsgReceiver = {
    * @return {[type]}     [description]
    */
   TAKE_SCREEN_SHOT: async req => {
+    const { vuexStore } = backgroundStatus;
+    console.log('vuexStore.state.storyDetails.story.id: ', vuexStore.state.storyDetails.story.id);
+    const storyId = vuexStore.state.storyDetails.story.id;
     // use chrome.tabs apis to take the screenshot
     const base64Data = await Promise.resolve({
       then: resolve => chrome.tabs.captureVisibleTab(
         null, {format: 'png', quality: 100}, function(dataURI) {
-          resolve(dataURI)
+          resolve(dataURI);
         }
       )
     });
     // create byteArray
-    window.b = base64Data;
     const byteCharacters = atob(base64Data.split(',')[1]);
     const byteNumbers = new Array(byteCharacters.length)
     for (var i = 0; i < byteCharacters.length; i++) {
@@ -132,21 +138,26 @@ const contentScriptMsgReceiver = {
     const byteArray = new Uint8Array(byteNumbers);
     // create fileName
     const fileName = `${(new Date).getTime().toString().slice(-9)}.png`;
-
-    fileSystem.createFileInDirectory(fileName, byteArray, 'image/png', backgroundStatus.ctx.name);
+    // file name is same to the story id
+    fileSystem.createFileInDirectory(fileName, byteArray, 'image/png', storyId);
     // create new image record
     const imageData = {
       name: fileName,
-      story_id: backgroundStatus.ctx.storyId,
+      story_id: storyId,
       time: (new Date()).getTime(),
       url: req.url
     };
-    console.log(imageData);
     const newImageId = await db.insert('images', imageData);
     // create new story record
-    const story = await db.get('stories', { id: backgroundStatus.ctx.storyId });
+
+    const story = await db.get('stories', { id: storyId });
     story.order.push(newImageId);
-    db.update('stories', story);
+    const res = await db.update('stories', story);
+    // !!
+    // both db.update and db.insert returns id.
+    // the db operations can be optimized to return Objects
+    // so that we don't have to do the following db operation.
+    vuexStore.dispatch('storyDetails/getAll', {storyId});
   },
 
   GET_DEMO_DATA: async (req, sendResponse) => {

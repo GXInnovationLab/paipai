@@ -1,61 +1,79 @@
 <template>
-  <div class='home normal-size'>
-    <popup-header
-      page-title='Home'
+  <!-- <popup-header
+    page-title='Home'
+  >
+    <router-link
+      class='create-new-story'
+      to='/new'
+      title='Create New Story'
     >
-      <router-link
-        class='create-new-story'
-        to='/new'
-        title='Create New Story'
-      >
-        <v-icon name='record' />
-      </router-link>
-    </popup-header>
-    <section class='popup-body'>
-      <div class='home-body'>
-        <!-- <h3 class='list-card-title'>
-          Story List
-        </h3> -->
-        <div class='list-title'>
-          <span>Story</span>
-          <span>Created</span>
-          <span>Operations</span>
-        </div>
-        <div class='list-container'>
-          <div>
-            <div
-              class='story-item'
-              v-for="story in stories"
-              v-if="story.id !== recordingStoryId"
-            >
-              <span>
-                {{ story.name }}
-              </span>
-              <span>
-                {{ getApproximateTime(story.time) }}
-              </span>
-              <span class='operation-list'>
-                <router-link
-                  class='create-new-story'
-                  :to='`/display/${story.id}`'
-                  title='Show Story Details'
-                >
-                  <v-icon name='play' />
-                </router-link>
-                <a
-                  href="javascript: void(0)"
-                  v-on:click="deleteStory(story.id)"
-                >
-                  <v-icon name='trash' />
-                </a>
-              </span>
-            </div>
-          </div>
-        </div>
-
+      <v-icon name='record' />
+    </router-link>
+  </popup-header> -->
+  <md-app class='home normal-size' md-waterfall>
+    <md-app-toolbar class='md-primary md-elevation-4 md-toolbar--header'>
+      <div>
+        <span class="md-title">Paipai</span>
+        <!-- <md-button class='md-button--default-in-header'>Back</md-button> -->
       </div>
-    </section>
-  </div>
+      <div>
+        <md-button
+          class='md-icon-button md-primary md-icon-button--common'
+          v-on:click="addNewStory"
+        >
+          <i class="iconfont icon-add"></i>
+        </md-button>
+      </div>
+    </md-app-toolbar>
+    <md-app-content class='home-content'>
+      <div class='list-container'>
+        <md-list v-if='stories.length > 0'>
+          <md-list-item
+            class='home-list__item'
+            v-for="story in stories"
+          >
+            <router-link :to='`/new/${story.id}`'>
+              <md-button class='md-button--default-in-header'>
+                {{ story.name }}
+              </md-button>
+            </router-link>
+            <!--
+            <span>
+              {{ /*getApproximateTime(story.time)*/ }}
+            </span>
+            -->
+            <span class='operation-list'>
+              <!-- <router-link
+                class='create-new-story'
+                :to='`/display/${story.id}`'
+                title='Show Story Details'
+              >
+                <md-button class='md-icon-button md-icon-button--common md-icon-button--gray'>
+                  <i class="iconfont icon-edit"></i>
+                </md-button>
+              </router-link> -->
+              <md-button
+                class='md-icon-button md-icon-button--common md-icon-button--gray'
+                v-on:click="deleteStory(story.id)"
+              >
+                <i class="iconfont icon-delete"></i>
+              </md-button>
+            </span>
+          </md-list-item>
+        </md-list>
+        <section class='home-placeholder' v-else>
+          <div class="home-placeholder_logo">
+            <i class='iconfont icon-screenshot'></i>
+          </div>
+          <p class='home-placeholder_hint'>Please click blank space on this page after clicked button below, you could use 'XXX' as keyboard shortcuts to make screenshot</p>
+          <md-button
+            class='md-raised md-primary md-raised--create-new-btn'
+            v-on:click='addNewStory'
+          >CREATE A NEW PAIPAI</md-button>
+        </section>
+      </div>
+    </md-app-content>
+  </md-app>
 </template>
 
 <script>
@@ -70,6 +88,7 @@ export default {
 
     get: async function() {
       this.stories = await api.command(BackgroundProtocol.GET_STORY_LIST);
+      console.log(this.stories)
     },
 
     getApproximateTime(time) {
@@ -77,116 +96,89 @@ export default {
     },
 
     deleteStory: async function(id) {
+      console.log('the id: ', id);
       await api.command(BackgroundProtocol.DELETE_STORY, id);
       this.get();
+    },
+
+    addNewStory: async function() {
+      const newStoryId = await api.command(BackgroundProtocol.ADD_NEW_STORY);
+      this.$router.push(`/new/${newStoryId}`);
     }
 
   },
+
   components: {
     'popup-header': Head
   },
+
   data () {
     return {
-      stories: [],
-      recordingStoryId: undefined
+      stories: []
     }
   },
+
   mounted: async function() {
     this.get();
-    this.recordingStoryId = api.getRecordingStoryId();
   }
 }
 </script>
 
-<!-- Add "scoped" attribute to limit CSS to this component only -->
-<style scoped>
-  .create-new-story {
-    margin-right: 10px;
-  }
+<style lang="scss" scoped>
+.home-content {
+  padding: 0;
+}
 
-  .create-new-story i {
-    font-size: 18px;
+.home-list__item {
+  position: relative;
+  justify-content: space-around;
 
-  }
-
-  .home {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .home-body {
-    display: flex;
-    flex-direction: column;
+  &:after {
+    content: '';
     position: absolute;
-    width: 100%;
-    height: 100%;
+    width: calc( 100% - 30px );
+    height: 1px;
+    background: #f7f7f7;
+    margin: 0 15px;
+    left: 0;
+    bottom: 0;
   }
 
-  .page-links {
-    padding: 3px 5px;
-    z-index: 1;
-    background: #fff;
+  * {
+    font-size: 24px;
   }
+}
 
-  /*.list-card-title {
-    z-index: 1;
-    background: #fff;
-    margin: 0;
-    text-align: center;
+.home-placeholder {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  top: 50%;
+  transform: translateY(-50%)
+}
+
+.home-placeholder_logo {
+  color: #eff2f8;
+
+  .iconfont {
+    font-size: 100px;
+  }
+}
+
+.home-placeholder_hint {
+  color: #9aa5b9;
+  padding: 0 30px;
+  text-align: center
+}
+
+.md-raised--create-new-btn {
+  width: 270px;
+  height: 40px;
+
+  .md-button-content {
     font-size: 15px;
-    font-weight: 300;
-  }*/
-
-  .list-container {
-    flex: 1 1 auto;
-    overflow: auto;
   }
-
-  .list-title {
-    flex: 0 0 auto;
-    border-bottom: solid 1px #ccc;
-    box-shadow: 0 1px 3px #ccc;
-    height: 30px;
-  }
-
-  .story-item {
-    border-bottom: solid 1px #eee;
-  }
-
-  .story-item, .list-title {
-    display: flex;
-  }
-
-  .story-item span, .list-title span {
-    flex: 1 0 1px;
-    text-align: center;
-  }
-
-  .story-item span {
-    padding: 3px 5px;
-  }
-
-  .list-title span {
-    line-height: 30px;
-  }
-
-  .operation-list {
-    display: flex;
-    justify-content: center;
-    align-items: center
-  }
-
-  .operation-list a {
-    text-decoration: none;
-    padding: 0 3px;
-    color: #999
-  }
-
-  .operation-list a:hover {
-    color: #333
-  }
-
-  .operation-list i {
-    font-size: 14px
-  }
+}
 </style>

@@ -167,7 +167,6 @@ const fileSystemObj = {
         reader.onloadend = function(e) {
           const txtArea = document.createElement('textarea');
           txtArea.value = this.result;
-          console.log('this.result: ', this.result);
         };
         reader.readAsText(file);
       }, fileSystemObj.errorHandler)

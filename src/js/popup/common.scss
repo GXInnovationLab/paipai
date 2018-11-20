@@ -1,0 +1,60 @@
+body {
+  /*background: #fafaff*/
+}
+
+.normal-size {
+  width: 320px;
+  height: 568px;
+}
+
+* {
+  font-size: 14px
+}
+
+*::-webkit-scrollbar-track {
+  /*border-radius: 10px;*/
+  background-color: #ddd
+}
+
+*::-webkit-scrollbar {
+  width: 7px;
+  background-color: #ddd;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: #aaa;
+}
+
+.popup-body {
+  position: relative;
+  flex: 1 1 auto;
+}
+
+// The followings are the muldifier classes for vue-material styles
+.md-icon-button--common {
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  margin: 0;
+}
+
+.md-toolbar--header {
+  justify-content: space-between;
+
+  i.iconfont {
+    font-size: 20px;
+  }
+}
+
+.md-button.md-button--default-in-header {
+  min-width: 0;
+  text-transform: none;
+
+  * {
+    font-size: 18px;
+  }
+}
+
+.md-button.md-icon-button--gray {
+  color: #a0aabd
+}

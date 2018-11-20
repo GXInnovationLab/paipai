@@ -6,7 +6,7 @@ import Display from 'Components/Display';
 Vue.use(Router);
 
 export const paths = {
-  newStory: '/new'
+  newStory: '/new/:id'
 }
 
 export default new Router({

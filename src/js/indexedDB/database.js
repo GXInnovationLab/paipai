@@ -13,7 +13,6 @@ const createDB = function(dbName, stores) {
 
   // 连接数据库的失败处理
   request.onerror = function(e) {
-    console.log(e.target.errorCode);
   }
 
   /**
@@ -28,9 +27,7 @@ const createDB = function(dbName, stores) {
       const keyPath = item.keyPath === undefined ? 'id' : item.keyPath
 
       const objectStore = db.createObjectStore(name, {keyPath, autoIncrement: true});
-      console.log('schema: ', schema)
       schema.forEach( columns => {
-        console.log('columns: ', columns);
         objectStore.createIndex(...columns)
       });
     });
@@ -58,8 +55,6 @@ const getAll = function() {
   return new Promise( resolve => {
     indexedDB.open(dbName).onsuccess = function(e) {
       const db = e.target.result;
-      console.log('storeName');
-      console.log(storeName);
       const transaction = db.transaction(storeName, 'readwrite');
       const store = transaction.objectStore(storeName);
       const req = store.getAll();

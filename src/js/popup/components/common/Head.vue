@@ -54,7 +54,6 @@ export default {
 
   .page-title {
     font-size: 15px;
-    font-weight: 600;
   }
 
   .extensions {

@@ -1,88 +1,74 @@
 <template>
-  <div :class='{
-    "et_display-container": true,
-    "normal-size": !editModeEnabled,
-    "edit-mode_size": editModeEnabled
-  }'>
-    <popup-header
-      back-route='/'
-      back-page-name='Home'
-      page-title='Display'
-    ></popup-header>
+  <md-app
+    class='et_display-container edit-mode_size normal-size'
+    md-waterfall
+    md-mode="fixed"
+  >
+    <md-app-toolbar class='md-primary md-elevation-4 md-toolbar--header'>
+      <div>
+        <!-- <popup-header
+          back-route='/'
+          back-page-name='Home'
+          page-title='Display'
+        ></popup-header> -->
+        <md-button class='md-button--default-in-header' v-on:click='goBack'>Cancel</md-button>
+      </div>
+      <div>
+        <md-button class='md-icon-button md-primary md-icon-button--common'>
+          <i class="iconfont icon-imgdownload"></i>
+        </md-button>
 
-    <article>
-      <header>
-        <h2>Screen Shots</h2>
-        <div>
-          <a
-            href="javascript: void(0)"
-            v-on:click='editImages()'
-            v-if='!editModeEnabled'
-          >Edit</a>
-          <a
-            href="javascript: void(0)"
-            v-on:click='exportPDF()'
-            v-if='!editModeEnabled'
-          >Export</a>
-          <!-- <a
-            href="javascript: void(0)"
-            v-on:click='goDemo()'
-            v-if='!editModeEnabled'
-          >Demo</a> -->
-          <a
-            href="javascript: void(0)"
-            v-on:click='editingZoomIn()'
-            v-if='editModeEnabled'
-          >Zoom In</a>
-          <a
-            href="javascript: void(0)"
-            v-on:click='editingZoomOut()'
-            v-if='editModeEnabled'
-          >Zoom Out</a>
-          <a
-            href="javascript: void(0)"
-            v-on:click='saveImagesEditing()'
-            v-if='editModeEnabled'
-          >Save</a>
-          <a
-            href="javascript: void(0)"
-            v-on:click='cancelEditing()'
-            v-if='editModeEnabled'
-          >Cancel</a>
-          <!-- <a href="javascript: void(0)"></a> -->
-        </div>
-      </header>
-      <section class='et_image-list' v-if='!editModeEnabled'>
-        <div
-          class='et_image-list-item'
-          v-for='(item, index) in order'
-          v-bind:item='item'
+        <md-button
+          class='md-icon-button md-primary md-icon-button--common'
+          v-on:click='exportPDF'
+          :disabled='unableToExportPDF()'
         >
-          <img v-bind:src="images[item].src" :ref='`image-${item}`'/>
-          <p>
 
-          </p>
-        </div>
-      </section>
-      <!-- <section id=et_imageList v-if='editModeEnabled'>
-        <div
-          class='et_image-list-item'
-          v-for='(item, index) in order'
+          <i class="iconfont icon-pdfdownload"></i>
+        </md-button>
+        <md-button class='md-icon-button md-primary md-icon-button--common'>
+          <i class="iconfont icon-delete"></i>
+        </md-button>
+
+        <md-button
+          class='md-icon-button md-primary md-icon-button--common'
+          v-on:click='saveImagesEditing'
         >
-          <img v-bind:src="images[item]" />
-          <p>
-
-          </p>
-        </div>
-      </section> -->
+          <i class="iconfont icon-save"></i>
+        </md-button>
+      </div>
+    </md-app-toolbar>
+    <md-app-content>
+      <div class='et_display__select-operations'>
+        <md-checkbox
+          v-model="ifAllAreSelected"
+          @change='selectAll'
+        >Select All</md-checkbox>
+        <span class='et_display__select-operations__ratio'>{{`${selectedAmount}/${editingOrder.length}`}}</span>
+      </div>
       <section id="et_imageList" class='et_image-list'>
-        <center class='et_image-list-editor-hint' v-if='editModeEnabled'>Drag the image to change the order</center>
-        <div ref='imageListContainer' class='et_imageList-container'>
+        <draggable
+          v-model="editingOrder"
+          @start="drag=true"
+          @end="drag=false"
+          class='dragging-container'
+        >
+          <div v-for="index in editingOrder" :key="index" class='dragging-item'>
+            <div>
+            <img v-bind:src='getImgSrc(index)' :ref='`image-${index}`' />
+            <md-checkbox v-model="imagesSelected[index]" class='image-checkbox'></md-checkbox>
+          </div>
 
-        </div>
+          </div>
+
+        </draggable>
       </section>
-    </article>
-  </div>
+      <div class="et_size-opt">
+        <md-button class="md-raised md-primary" v-on:click='editingZoomIn'>+</md-button>
+        <md-button class="md-raised md-primary" v-on:click='editingZoomOut'>-</md-button>
+      </div>
+    </md-app-content>
+  </md-app>
 </template>
 
 <script>
@@ -93,6 +79,7 @@ import Head from 'Components/common/Head';
 import BackgroundProtocol from 'BackgroundProtocol';
 import api from 'Popup/backgroundApi';
 import Sortable from 'sortablejs';
+import draggable from 'vuedraggable'
 
 import { counterFormat, convertSecondsToMS, getTimeMinuteSecond, getCurrentWindowActiveTabId, getApproximateTime } from 'Utils';
 import router from '../router';
@@ -113,27 +100,101 @@ export default {
     };
   },
 
+  computed: {
+    getStoryDetails() {
+      return this.$store.state.storyDetails.order;
+    },
+
+    getImgSrc() {
+      const { images } = this.$store.state.storyDetails;
+      console.log(images);
+      return item => {
+        return `filesystem:${window.location.origin}/persistent/${this.$route.params.id}/${images[item].fileName}`;
+      }
+    },
+
+    ifAllAreSelected: {
+      get: function() {
+        const keys = Object.keys(this.imagesSelected);
+        for (let i = 0; i < keys.length; i ++) {
+          if (this.imagesSelected[keys[i]] === false) {
+            return false;
+          }
+        }
+        return true;
+      },
+      set: function() {}
+    },
+
+    selectedAmount() {
+      let amount = 0;
+      const keys = Object.keys(this.imagesSelected);
+
+      for (let i = 0; i < keys.length; i ++) {
+        if (this.imagesSelected[keys[i]] === true) {
+          amount ++;
+        }
+      }
+      return amount;
+    }
+
+  },
+// #ffffff57
+  watch: {
+    getStoryDetails(newOrder) {
+      this.editingOrder = newOrder.slice();
+
+      newOrder.forEach( key => {
+        this.$set(this.imagesSelected, key, true);
+      });
+
+      window.imagesSelected = this.imagesSelected;
+    },
+
+    imagesSelected: {
+      handler: function (newVal, oldVal) {
+        console.info('value changed ', newVal)
+        // this.$emit('e1', newVal)
+      },
+      // immediate: true,
+      deep: true
+    }
+  },
+
   methods: {
     getInitialData() {
       return {
         story: {},
         images: {},
         order: [],
-        editingOrder: []
+        editingOrder: [],
+        selectedImgs: [],
+        imagesSelected: {}
       }
     },
 
-    get: async function() {
-      const storyId = parseInt(this.$route.params.id);
-      const data = await api.command(BackgroundProtocol.GET_STORY_AND_ITS_IMAGES, storyId);
-      const { story, images } = data;
-      this.story = story;
-      this.order = story.order;
-      images.forEach( item => {
-        this.images[item.id] = {
-          src: `filesystem:${window.location.origin}/persistent/${story.name}/${item.name}`,
-          pageUrl: item.url
-        };
+    unableToExportPDF() {
+      const keys = Object.keys(this.imagesSelected);
+
+      for (let i = 0; i < keys.length; i ++) {
+        const key = keys[i];
+        if (this.imagesSelected[key]) {
+          return false;
+        }
+      }
+      return true;
+    },
+
+    get() {
+      // console.log('this.storyDetails', this.storyDetails)
+      this.$store.dispatch('storyDetails/getAll', {storyId: this.$route.params.id});
+    },
+
+    selectAll() {
+      const targetValue = this.ifAllAreSelected ? false : true;
+      const keys = Object.keys(this.imagesSelected);
+      keys.forEach( key => {
+        this.imagesSelected[key] = targetValue;
       });
     },
 
@@ -144,10 +205,10 @@ export default {
 
     editingZoomIn: function() {
       // We increase the width of each of these elements by 20 pixels
-      const list = document.querySelectorAll('.et_image-list-item');
+      const list = document.querySelectorAll('.dragging-item');
 
       const theFirstElement = list[0];
-      const resultAfterAdded20px = theFirstElement.offsetWidth + 20;
+      const resultAfterAdded20px = theFirstElement.offsetWidth + 60;
       const newSize = resultAfterAdded20px > 774 ? 774 : resultAfterAdded20px;
 
       list.forEach( item => {
@@ -157,63 +218,21 @@ export default {
 
     editingZoomOut: function() {
       // We reduce the width of each of these elements by 20 pixels
-      const list = document.querySelectorAll('.et_image-list-item');
+      const list = document.querySelectorAll('.dragging-item');
 
       list.forEach( item => {
-        item.style.width = `${item.offsetWidth - 20}px`;
+        item.style.width = `${item.offsetWidth - 60}px`;
       });
     },
 
     saveImagesEditing: async function() {
+      const { order, story } = this.$store.state.storyDetails;
       const updateData = {
-        ...this.story,
-        order: this.order
+        ...story,
+        order: this.editingOrder
       };
 
       const newData = await api.command(BackgroundProtocol.UPDATE_STORY, updateData);
-      this.disableEditingMode();
-    },
-
-    cancelEditing: function() {
-      this.disableEditingMode();
-    },
-
-    editImages: function() {
-      this.editModeEnabled = true;
-      this.editingOrder = this.order;
-      const display = this;
-      setTimeout(() => {
-        const sortableList = this.$refs['imageListContainer'];;
-        let sortableList_innerHTML = '';
-        this.editingOrder.forEach( item => {
-          sortableList_innerHTML += `
-            <div
-              class='et_image-list-item drag-handle-selector'
-            >
-              <img src="${this.images[item].src}" />
-              <p>
-
-              </p>
-            </div>
-          `
-        });
-
-        sortableList.innerHTML = sortableList_innerHTML;
-
-        const sortableImageList = new Sortable.create(sortableList, {
-          // animation: 300,
-          handle: '.drag-handle-selector',
-          ghostClass: 'image-list_drag-ghost',
-          chosenClass: 'image-list_drag-chosen',
-          scrollSensitivity: 50,
-          onEnd: function (/**Event*/evt) {
-            const { oldIndex, newIndex } = evt;
-            display.editingOrder.splice(newIndex, 0, display.editingOrder.splice(oldIndex, 1)[0]);
-          },
-        });
-      }, 100)
-
-      // debugger;
     },
 
     toDataURL: function(url) {
@@ -235,6 +254,8 @@ export default {
     },
 
     exportPDF: async function() {
+      const { images, story } = this.$store.state.storyDetails;
+
       const pdf = new jsPDF('l', 'mm', [297, 210]);
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
@@ -245,7 +266,6 @@ export default {
       const imgMaxHeight = pageHeight - TITLE_HEIGHT - HYPERLINK_HEIGHT;
       const limitRatio = imgMaxWidth / imgMaxHeight;
       const addImageToPDF = async (imgId, top) => {
-        var r = this.$refs;
         const imgDom = this.$refs[`image-${imgId}`][0];
         const imgRatio = imgDom.clientWidth / imgDom.clientHeight;
         let imgHeight, imgWidth, imgLeft = 0;
@@ -258,11 +278,11 @@ export default {
           imgHeight = imgMaxWidth / imgRatio;
         }
 
-        const dataUrl = await this.toDataURL(this.images[imgId].src);
+        const dataUrl = await this.toDataURL(this.getImgSrc(imgId));
 
         pdf.setFontSize(10);
         pdf.setTextColor(46, 99, 217);
-        pdf.textWithLink(`Page url: ${this.images[imgId].pageUrl}`, 20, top + imgHeight + IMAGE_MARGIN_BOTTOM, { url: this.images[imgId].pageUrl });
+        pdf.textWithLink(`Page url: ${images[imgId].pageUrl}`, 20, top + imgHeight + IMAGE_MARGIN_BOTTOM, { url: images[imgId].pageUrl });
         pdf.addImage(dataUrl, 'PNG', imgLeft, top, imgWidth, imgHeight, null, null);
       }
 
@@ -271,19 +291,23 @@ export default {
       // pdf.text( 5, 10, `Story: ${this.story.name}`);
 
       // Add page and image
-      for (let i = 0; i < this.order.length; i ++) {
-        i > 0 && pdf.addPage();
-        // print pageNumber
-        pdf.setFontSize(10);
-        pdf.setTextColor(120, 120, 120);
-        const pageNumberTop = pageHeight - HYPERLINK_HEIGHT + IMAGE_MARGIN_BOTTOM;
-        pdf.text( pageWidth - 20, pageNumberTop, `Page ${i + 1}`);
+      let pageNumber = 1;
+      for (let i = 0; i < this.editingOrder.length; i ++) {
+        if (this.imagesSelected[this.editingOrder[i]]) {
+          pageNumber > 1 && pdf.addPage();
+          // print pageNumber
+          pdf.setFontSize(10);
+          pdf.setTextColor(120, 120, 120);
+          const pageNumberTop = pageHeight - HYPERLINK_HEIGHT + IMAGE_MARGIN_BOTTOM;
+          pdf.text( pageWidth - 20, pageNumberTop, `Page ${pageNumber}`);
 
-        await addImageToPDF(this.order[i], TITLE_HEIGHT);
+          await addImageToPDF(this.editingOrder[i], TITLE_HEIGHT);
+          pageNumber ++;
+        }
       }
       // pdf.addHTML(10, 10, 'This is a test')
       // pdf.autoPrint();
-      pdf.save(`Paipai-${this.story.name}.pdf`);
+      pdf.save(`Paipai-${story.name}.pdf`);
     },
 
     goDemo: function() {
@@ -293,6 +317,10 @@ export default {
         order: this.order
       };
       api.command(BackgroundProtocol.GO_DEMO, data);
+    },
+
+    goBack () {
+      this.$router.replace(`/new/${this.$route.params.id}`);
     }
 
   },
@@ -300,19 +328,30 @@ export default {
   props: ['id'],
 
   mounted: async function() {
+    window.t = this;
     this.get();
+  },
+
+  destroyed() {
+    this.$store.commit('storyDetails/remove');
+  },
+
+  updated() {
+    // this.editImages();
+    console.log(this.$store.state.storyDetails.order)
   },
 
   destroyed: async function() {
   },
 
   components: {
-    'popup-header': Head
+    'popup-header': Head,
+    draggable
   }
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 #et_imageList.et_image-list {
   /*display: flex;
   flex-wrap: wrap;*/
@@ -328,7 +367,7 @@ export default {
 }
 
 .edit-mode_size {
-  width: 800px;
+  width: 600px;
   height: 600px;
 }
 
@@ -361,6 +400,61 @@ export default {
 .et_display-container header a {
   margin-left: 5px
 }
+
+.et_size-opt {
+  position: absolute;
+  bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  right: 35px;
+  width: 30px;
+
+  button.md-button.md-theme-default.md-primary {
+    background-color: #00000099;
+    margin: 0;
+    min-width: 0;
+    height: 30px;
+    margin-bottom: 2px;
+  }
+}
+
+.dragging-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+}
+
+.dragging-item {
+  position: relative;
+  width: 234px;
+  margin: 10px;
+  border: solid 2px #c5c5cc;
+}
+
+.image-checkbox {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  background: #fff;
+}
+
+.md-checkbox-label.checkbox-label {
+  display: block;
+  position: absolute;
+  z-index: 100;
+}
+
+.et_display__select-operations {
+  display: flex;
+  justify-content: space-between;
+  margin-top: -15px;
+  margin-bottom: -15px;
+}
+
+.et_display__select-operations__ratio {
+  margin: 16px 0;
+}
+
 </style>
 <style>
 .et_image-list {
@@ -380,7 +474,7 @@ export default {
 }
 
 .et_image-list-item {
-  width: 290px;
+  width: 100%;
   margin: 10px auto;
   border-radius: 6px;
   overflow: hidden;
@@ -406,4 +500,18 @@ export default {
 .image-list_drag-chosen {
   opacity: .4;
 }
+
+.et_size-opt .md-button-content {
+  font-size: 20px;
+}
+
+.md-button-content {
+  font-size: 20px;
+}
+
+.md-checkbox .md-checkbox-container input {
+  left: 0;
+  opacity: 0;
+}
+
 </style>

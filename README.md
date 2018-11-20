@@ -1,4 +1,4 @@
-# Pdfmaker for Demo
+# Pdf generator for Demoing
 Using IndexedDB to store the file infos and fileSystem to store the files.<br />
 The popup page was developed in Simple Vue.js.<br />
 

@@ -60,7 +60,6 @@ const deleteStory = async function(condition) {
   });
 
   fileSystem.removeDirectory((condition.story_id).toString());
-  console.log('deleted');
   return res;
 }
 
@@ -83,6 +82,17 @@ const syncVueStatus = async (status, newCtx, type) => {
   status.ctx = newCtx;
   return true;
 };
+
+const removeStories = async function(list) {
+  data.forEach(item => {
+    const { id, name } = item;
+    fileSystem.removeFile(name);
+
+    const res = db.delete('images', { id });
+  });
+
+  return true;
+}
 
 //
 //
@@ -247,5 +257,9 @@ export default {
       store: status.vuexStore,
       url: status.popupHash
     } : undefined;
+  },
+
+  REMOVE_STORIES: async (status, list) => {
+    return await removeStories(list);
   }
 }

@@ -130,17 +130,21 @@ export default {
       api.command(BackgroundProtocol.STOP_RECORD);
     },
 
+    startRecord() {
+      /**
+       * 开始录制
+       */
+      this.$store.commit('storyDetails/startRecording');
+
+
+      api.command(BackgroundProtocol.ON_RECORD, this);
+    },
+
     onRecord() {
       if (this.$store.state.storyDetails.isRecording) {
         this.stopRecord();
       } else {
-        /**
-         * 开始录制
-         */
-        this.$store.commit('storyDetails/startRecording');
-
-
-        api.command(BackgroundProtocol.ON_RECORD, this);
+        this.startRecord();
         // chrome.runtime.onMessage.addListener(function(msg, sender, sendResponse) {
         //   console.log(msg.command);
         // });
@@ -171,6 +175,7 @@ export default {
   async mounted() {
     this.$refs.storyNameInput.focus();
     this.get();
+    this.startRecord();
     /**
      * 后台会自动将this的各种属性替换掉
      */

@@ -32,7 +32,7 @@
             class='home-list__item'
             v-for="story in stories"
           >
-            <router-link :to='`/new/${story.id}`'>
+            <router-link :to='`/new/${story.id}`' class='home-list__item-link'>
               <md-button class='md-button--default-in-header'>
                 {{ story.name }}
               </md-button>
@@ -125,6 +125,15 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.md-title {
+  font-weight: 600;
+}
+
+.md-toolbar--header {
+  padding: 0 16px;
+  min-width: 320px;
+}
+
 .home-content {
   padding: 0;
 }
@@ -174,11 +183,25 @@ export default {
 }
 
 .md-raised--create-new-btn {
-  width: 270px;
-  height: 40px;
+  width: 234px;
+  height: 44px;
 
   .md-button-content {
-    font-size: 15px;
+    font-size: 16px;
   }
+}
+
+.home-list__item-link {
+  flex: 1 1 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+
+}
+
+</style>
+<style type="text/css">
+.md-raised--create-new-btn .md-button-content {
+  font-size: 16px;
 }
 </style>

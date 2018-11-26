@@ -26,13 +26,18 @@
 
           <i class="iconfont icon-pdfdownload"></i>
         </md-button>
-        <md-button class='md-icon-button md-primary md-icon-button--common'>
+        <md-button
+          class='md-icon-button md-primary md-icon-button--common'
+          v-on:click='deleteImg'
+          :disabled='unableToExportPDF()'
+        >
           <i class="iconfont icon-delete"></i>
         </md-button>
 
         <md-button
           class='md-icon-button md-primary md-icon-button--common'
           v-on:click='saveImagesEditing'
+          :disabled='!ifEdited'
         >
           <i class="iconfont icon-save"></i>
         </md-button>
@@ -73,6 +78,7 @@
 
 <script>
 
+import Vue from 'vue';
 import jsPDF from 'jspdf';
 
 import Head from 'Components/common/Head';
@@ -107,7 +113,6 @@ export default {
 
     getImgSrc() {
       const { images } = this.$store.state.storyDetails;
-      console.log(images);
       return item => {
         return `filesystem:${window.location.origin}/persistent/${this.$route.params.id}/${images[item].fileName}`;
       }
@@ -139,7 +144,7 @@ export default {
     }
 
   },
-// #ffffff57
+
   watch: {
     getStoryDetails(newOrder) {
       this.editingOrder = newOrder.slice();
@@ -147,8 +152,6 @@ export default {
       newOrder.forEach( key => {
         this.$set(this.imagesSelected, key, true);
       });
-
-      window.imagesSelected = this.imagesSelected;
     },
 
     imagesSelected: {
@@ -157,6 +160,15 @@ export default {
         // this.$emit('e1', newVal)
       },
       // immediate: true,
+      deep: true
+    },
+
+    editingOrder: {
+      handler(newValue, oldValue) {
+        this.ifEdited = !this.$store.state.storyDetails.order.every(( item, index ) => {
+          return newValue[index] === item;
+        });
+      },
       deep: true
     }
   },
@@ -169,7 +181,8 @@ export default {
         order: [],
         editingOrder: [],
         selectedImgs: [],
-        imagesSelected: {}
+        imagesSelected: {},
+        ifEdited: false
       }
     },
 
@@ -186,7 +199,6 @@ export default {
     },
 
     get() {
-      // console.log('this.storyDetails', this.storyDetails)
       this.$store.dispatch('storyDetails/getAll', {storyId: this.$route.params.id});
     },
 
@@ -216,7 +228,7 @@ export default {
       });
     },
 
-    editingZoomOut: function() {
+    editingZoomOut() {
       // We reduce the width of each of these elements by 20 pixels
       const list = document.querySelectorAll('.dragging-item');
 
@@ -225,14 +237,38 @@ export default {
       });
     },
 
+    deleteImg() {
+      const selectedIds = Object.keys(this.imagesSelected);
+      selectedIds.forEach( id => {
+        if (this.imagesSelected[id]) {
+          const index = this.editingOrder.indexOf(parseInt(id));
+          this.editingOrder.splice(index, 1);
+          Vue.delete(this.imagesSelected, id);
+        }
+      });
+    },
+
     saveImagesEditing: async function() {
-      const { order, story } = this.$store.state.storyDetails;
+      const { order, story, images } = this.$store.state.storyDetails;
       const updateData = {
         ...story,
         order: this.editingOrder
       };
 
-      const newData = await api.command(BackgroundProtocol.UPDATE_STORY, updateData);
+      await api.command(BackgroundProtocol.UPDATE_STORY, updateData);
+      if (this.editingOrder.length !== order.length) {
+        const deletedIds = [];
+        order.forEach( item => {
+          !this.editingOrder.includes(item) && deletedIds.push;
+        })
+        await api.command(BackgroundProtocol.REMOVE_STORIES, deletedIds.map( id => {
+          return {
+            id,
+            name: images[id].fileName
+          }
+        }));
+        this.get();
+      }
     },
 
     toDataURL: function(url) {
@@ -338,7 +374,6 @@ export default {
 
   updated() {
     // this.editImages();
-    console.log(this.$store.state.storyDetails.order)
   },
 
   destroyed: async function() {
@@ -368,7 +403,7 @@ export default {
 
 .edit-mode_size {
   width: 600px;
-  height: 600px;
+  height: 568px;
 }
 
 .et_display-container * {

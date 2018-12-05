@@ -14,7 +14,10 @@
         <md-button class='md-button--default-in-header' v-on:click='goBack'>Cancel</md-button>
       </div>
       <div>
-        <md-button class='md-icon-button md-primary md-icon-button--common'>
+        <md-button
+          class='md-icon-button md-primary md-icon-button--common'
+          v-on:click='exportImages'
+        >
           <i class="iconfont icon-imgdownload"></i>
         </md-button>
 
@@ -85,7 +88,10 @@ import Head from 'Components/common/Head';
 import BackgroundProtocol from 'BackgroundProtocol';
 import api from 'Popup/backgroundApi';
 import Sortable from 'sortablejs';
-import draggable from 'vuedraggable'
+import draggable from 'vuedraggable';
+import JSZip from 'jszip';
+import JSZipUtils from 'jszip-utils';
+import saveAs from 'file-saver';
 
 import { counterFormat, convertSecondsToMS, getTimeMinuteSecond, getCurrentWindowActiveTabId, getApproximateTime } from 'Utils';
 import router from '../router';
@@ -261,7 +267,7 @@ export default {
         order.forEach( item => {
           !this.editingOrder.includes(item) && deletedIds.push;
         })
-        await api.command(BackgroundProtocol.REMOVE_STORIES, deletedIds.map( id => {
+        await api.command(BackgroundProtocol.REMOVE_FILES, deletedIds.map( id => {
           return {
             id,
             name: images[id].fileName
@@ -289,6 +295,26 @@ export default {
       })
     },
 
+    exportImages: async function() {
+      const { story } = this.$store.state.storyDetails;
+
+      const zip = new JSZip();
+      await this.iterateSelectedImages( async imgId => {
+        const b64Data = (await this.fromImgIdToDataUrl(imgId)).split(',')[1];
+        var byteCharacters = atob(b64Data);
+        var byteNumbers = new Array(byteCharacters.length);
+        for (var i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        var byteArray = new Uint8Array(byteNumbers);
+        var blob = new Blob([byteArray], {type: 'image/png'});
+        zip.file(`${story.name}/${imgId}.png`, blob, {binary:true});
+      });
+      zip.generateAsync({type: "blob"}).then(function callback(blob) {
+        saveAs(blob, `${story.name}_images.zip`);
+      });
+    },
+
     exportPDF: async function() {
       const { images, story } = this.$store.state.storyDetails;
 
@@ -308,13 +334,13 @@ export default {
         if (limitRatio > imgRatio) {
           imgHeight = imgMaxHeight;
           imgWidth = imgMaxHeight * imgRatio;
-          imgLeft = (pageWidth - imgWidth) / 2
+          imgLeft = (pageWidth - imgWidth) / 2;
         } else {
           imgWidth = imgMaxWidth;
           imgHeight = imgMaxWidth / imgRatio;
         }
 
-        const dataUrl = await this.toDataURL(this.getImgSrc(imgId));
+        const dataUrl = await this.fromImgIdToDataUrl(imgId);
 
         pdf.setFontSize(10);
         pdf.setTextColor(46, 99, 217);
@@ -328,22 +354,44 @@ export default {
 
       // Add page and image
       let pageNumber = 1;
-      for (let i = 0; i < this.editingOrder.length; i ++) {
-        if (this.imagesSelected[this.editingOrder[i]]) {
-          pageNumber > 1 && pdf.addPage();
-          // print pageNumber
-          pdf.setFontSize(10);
-          pdf.setTextColor(120, 120, 120);
-          const pageNumberTop = pageHeight - HYPERLINK_HEIGHT + IMAGE_MARGIN_BOTTOM;
-          pdf.text( pageWidth - 20, pageNumberTop, `Page ${pageNumber}`);
+      await this.iterateSelectedImages( async imgId => {
+        pageNumber > 1 && pdf.addPage();
+        // print pageNumber
+        pdf.setFontSize(10);
+        pdf.setTextColor(120, 120, 120);
+        const pageNumberTop = pageHeight - HYPERLINK_HEIGHT + IMAGE_MARGIN_BOTTOM;
+        pdf.text( pageWidth - 20, pageNumberTop, `Page ${pageNumber}`);
 
-          await addImageToPDF(this.editingOrder[i], TITLE_HEIGHT);
-          pageNumber ++;
-        }
-      }
+        await addImageToPDF(imgId, TITLE_HEIGHT);
+        pageNumber ++;
+      });
+
       // pdf.addHTML(10, 10, 'This is a test')
       // pdf.autoPrint();
       pdf.save(`Paipai-${story.name}.pdf`);
+    },
+
+    /**
+     * Iterate the selected images.
+     * @param  {Function} callback - async (imgId, index) => {...}
+     * @return {undefined}
+     */
+    iterateSelectedImages: async function(callback) {
+      for (let i = 0; i < this.editingOrder.length; i ++) {
+        const item = this.editingOrder[i];
+        if (this.imagesSelected[item]) {
+          typeof callback === 'function' && await callback(item, i);
+        }
+      }
+    },
+
+    /**
+     * [description]
+     * @param  {[type]} imgId [description]
+     * @return {String}       - base64 of the image.
+     */
+    fromImgIdToDataUrl: async function(imgId) {
+      return await this.toDataURL(this.getImgSrc(imgId));
     },
 
     goDemo: function() {

@@ -102,3 +102,33 @@ export const sendMsg = async function(msg, callback) {
     chrome.tabs.sendMessage(tabId, msg, res => resolve(res));
   });
 }
+
+/**
+ * Download multiple images
+ * @param  {Array} images - The array of the src strings of the images that you intend to download
+ * @return {[type]}        [description]
+ */
+export const downloadImages = function(sources) {
+  sources.forEach( src => downloadImage(src));
+}
+
+/**
+ * Download single image
+ * @param  {[type]} src - The src string of the image thate you intend to download
+ * @return {[type]}     [description]
+ */
+const downloadImage = src => {
+    var link = document.createElement('a');
+    link.href = src;
+    link.download = true;
+    link.style.display = "none";
+    var event = new MouseEvent("click", {
+        view: window,
+        bubbles: true,
+        cancelable: true
+    });
+
+    document.body.appendChild(link);
+    link.dispatchEvent(event);
+    document.body.removeChild(link);
+}

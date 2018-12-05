@@ -119,7 +119,6 @@ const contentScriptMsgReceiver = {
    */
   TAKE_SCREEN_SHOT: async req => {
     const { vuexStore } = backgroundStatus;
-    console.log('vuexStore.state.storyDetails.story.id: ', vuexStore.state.storyDetails.story.id);
     const storyId = vuexStore.state.storyDetails.story.id;
     // use chrome.tabs apis to take the screenshot
     const base64Data = await Promise.resolve({

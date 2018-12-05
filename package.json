@@ -37,8 +37,11 @@
   "author": "GX Innovation Lab",
   "dependencies": {
     "clone": "^2.1.2",
+    "file-saver": "^2.0.0",
     "html2canvas": "^1.0.0-alpha.12",
     "jspdf": "^1.4.1",
+    "jszip": "^3.1.5",
+    "jszip-utils": "^0.0.2",
     "sass-loader": "^7.1.0",
     "sortablejs": "^1.7.0",
     "sweetalert2": "^7.28.12",

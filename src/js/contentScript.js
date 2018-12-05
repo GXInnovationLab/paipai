@@ -28,7 +28,6 @@ document.addEventListener('keydown', event => {
   const command = codeToCommand[event.code];
 
   // sendMsg({ command });
-  console.log('commandsActivated[command]: ', commandsActivated[command])
   if (
     typeof contentScriptOperations[command] === 'function' &&
     commandsActivated[command]

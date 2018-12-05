@@ -40,6 +40,7 @@ body {
 
 .md-toolbar--header {
   justify-content: space-between;
+  flex-wrap: nowrap;
 
   i.iconfont {
     font-size: 20px;
@@ -49,9 +50,19 @@ body {
 .md-button.md-button--default-in-header {
   min-width: 0;
   text-transform: none;
+  width: 100%;
+  margin: 0;
+  padding: 0 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 
   * {
     font-size: 18px;
+  }
+
+  .md-ripple {
+    justify-content: start;
   }
 }
 

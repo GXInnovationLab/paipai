@@ -7,10 +7,11 @@
           name="name"
           class="story-name__input"
           v-model="storyName"
+          maxlength='36'
           ref="storyNameInput"
         >
       </div>
-      <div>
+      <div class="header__button-group">
         <md-button class='md-icon-button md-primary md-icon-button--common' v-on:click='addNewStory'>
           <i class="iconfont icon-add"></i>
         </md-button>
@@ -96,6 +97,7 @@ export default {
       },
 
       set (value) {
+        console.log(value);
         this.$store.commit('storyDetails/changeStoryName', { value });
         api.command(BackgroundProtocol.CHANGE_STORY_NAME);
       }
@@ -256,6 +258,10 @@ export default {
     color: #fff;
     border: none;
     padding-left: 10px;
+  }
+
+  .header__button-group {
+    display: flex;
   }
 
 </style>

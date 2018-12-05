@@ -4,7 +4,7 @@ import { getCurrentWindowActiveTabId } from 'Utils';
 // import c from './components/index.js';
 import displayGenerator from './displayGenerator';
 import fileSystem from './fileSystem';
-window.f = fileSystem;
+// window.f = fileSystem;
 
 // function getCurrentWindowActiveTabId() {
 //   return new Promise((resolve) => {
@@ -83,12 +83,13 @@ const syncVueStatus = async (status, newCtx, type) => {
   return true;
 };
 
-const removeStories = async function(list) {
-  data.forEach(item => {
+const removeFiles = async function(list) {
+  list.forEach(item => {
     const { id, name } = item;
     fileSystem.removeFile(name);
 
     const res = db.delete('images', { id });
+    console.log(res);
   });
 
   return true;
@@ -140,13 +141,14 @@ export default {
   },
 
   ON_RECORD: async (status, data) => {
-    const tabId = await getCurrentWindowActiveTabId();
-    chrome.tabs.sendMessage(
-      tabId,
-      {
-        command: 'ON_RECORD'
+    // const tabId = await getCurrentWindowActiveTabId();
+    chrome.tabs.query({}, function(tabs) {
+      for (let i = 0; i < tabs.length; ++ i) {
+        chrome.tabs.sendMessage(tabs[i].id, {
+          command: 'ON_RECORD'
+        });
       }
-    );
+    });
   },
 
   ON_DISPLAY: async (status, data) => {
@@ -259,7 +261,7 @@ export default {
     } : undefined;
   },
 
-  REMOVE_STORIES: async (status, list) => {
-    return await removeStories(list);
+  REMOVE_FILES: async (status, list) => {
+    return await removeFiles(list);
   }
 }

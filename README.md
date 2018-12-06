@@ -1,5 +1,5 @@
 # Paipai
-Chrome extension, a webpage systematically screenshot tool. Support foldering, images compressing and PDF generating.<br />
+Chrome extension, a webpage systematically screenshot taking tool. Support foldering, images compressing and PDF generating.<br /><br />
 Using IndexedDB to store the file infos and fileSystem to store the files.<br />
 The popup page was developed in Simple Vue.js, together with vuex and vue-material.<br />
 

@@ -260,8 +260,4 @@ export default {
     padding-left: 10px;
   }
 
-  .header__button-group {
-    display: flex;
-  }
-
 </style>

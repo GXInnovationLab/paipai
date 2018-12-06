@@ -13,22 +13,41 @@
         ></popup-header> -->
         <md-button class='md-button--default-in-header' v-on:click='goBack'>Cancel</md-button>
       </div>
-      <div>
+      <div class='header__button-group'>
         <md-button
           class='md-icon-button md-primary md-icon-button--common'
           v-on:click='exportImages'
+          v-if='!isPackingImages'
         >
           <i class="iconfont icon-imgdownload"></i>
         </md-button>
-
+        <div class="header-button__spin-container" v-else>
+          <md-progress-spinner
+            class="md-accent"
+            :md-diameter="20"
+            :md-stroke="3"
+            md-mode="indeterminate"
+          >
+          </md-progress-spinner>
+        </div>
         <md-button
           class='md-icon-button md-primary md-icon-button--common'
           v-on:click='exportPDF'
           :disabled='unableToExportPDF()'
+          v-if='!isTakingPDF'
         >
-
           <i class="iconfont icon-pdfdownload"></i>
         </md-button>
+        <div class="header-button__spin-container" v-else>
+          <md-progress-spinner
+            class="md-accent"
+            :md-diameter="20"
+            :md-stroke="3"
+            md-mode="indeterminate"
+          >
+          </md-progress-spinner>
+        </div>
+
         <md-button
           class='md-icon-button md-primary md-icon-button--common'
           v-on:click='deleteImg'
@@ -188,7 +207,9 @@ export default {
         editingOrder: [],
         selectedImgs: [],
         imagesSelected: {},
-        ifEdited: false
+        ifEdited: false,
+        isTakingPDF: false,
+        isPackingImages: false
       }
     },
 
@@ -265,12 +286,12 @@ export default {
       if (this.editingOrder.length !== order.length) {
         const deletedIds = [];
         order.forEach( item => {
-          !this.editingOrder.includes(item) && deletedIds.push;
+          !this.editingOrder.includes(item) && deletedIds.push(item);
         })
         await api.command(BackgroundProtocol.REMOVE_FILES, deletedIds.map( id => {
           return {
             id,
-            name: images[id].fileName
+            name: `${this.$route.params.id}/${images[id].fileName}`
           }
         }));
         this.get();
@@ -296,6 +317,7 @@ export default {
     },
 
     exportImages: async function() {
+      this.isPackingImages = true;
       const { story } = this.$store.state.storyDetails;
 
       const zip = new JSZip();
@@ -313,9 +335,11 @@ export default {
       zip.generateAsync({type: "blob"}).then(function callback(blob) {
         saveAs(blob, `${story.name}_images.zip`);
       });
+      this.isPackingImages = false;
     },
 
     exportPDF: async function() {
+      this.isTakingPDF = true;
       const { images, story } = this.$store.state.storyDetails;
 
       const pdf = new jsPDF('l', 'mm', [297, 210]);
@@ -368,6 +392,7 @@ export default {
 
       // pdf.addHTML(10, 10, 'This is a test')
       // pdf.autoPrint();
+      this.isTakingPDF = false;
       pdf.save(`Paipai-${story.name}.pdf`);
     },
 
@@ -536,6 +561,14 @@ export default {
 
 .et_display__select-operations__ratio {
   margin: 16px 0;
+}
+
+.header-button__spin-container {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center
 }
 
 </style>

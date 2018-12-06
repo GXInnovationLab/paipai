@@ -4,7 +4,7 @@ import { getCurrentWindowActiveTabId } from 'Utils';
 // import c from './components/index.js';
 import displayGenerator from './displayGenerator';
 import fileSystem from './fileSystem';
-// window.f = fileSystem;
+window.f = fileSystem;
 
 // function getCurrentWindowActiveTabId() {
 //   return new Promise((resolve) => {
@@ -15,7 +15,6 @@ import fileSystem from './fileSystem';
 //     })
 //   })
 // }
-
 function getCurrentWindowActiveTabURL() {
   return new Promise((resolve) => {
     chrome.tabs.query({
@@ -84,12 +83,13 @@ const syncVueStatus = async (status, newCtx, type) => {
 };
 
 const removeFiles = async function(list) {
+  console.log(list)
   list.forEach(item => {
     const { id, name } = item;
+    console.log('removing filename: ', name);
     fileSystem.removeFile(name);
 
     const res = db.delete('images', { id });
-    console.log(res);
   });
 
   return true;
@@ -262,6 +262,7 @@ export default {
   },
 
   REMOVE_FILES: async (status, list) => {
+    console.log('removing files')
     return await removeFiles(list);
   }
 }

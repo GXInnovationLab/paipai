@@ -1,7 +1,7 @@
 {
   "name": "paipai",
   "version": "0.0.1",
-  "description": "A boilerplate to chrome extension with webpack",
+  "description": "Implemented as a chrome extension, a webpage systematically screenshot taking tool. Support foldering, images compressing and PDF generating.",
   "scripts": {
     "build": "NODE_ENV=production node utils/build.js",
     "start": "NODE_ENV=development node utils/webserver.js"
